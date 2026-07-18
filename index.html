@@ -84,21 +84,25 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;display:flex;height:100
 #tip{position:fixed;background:rgba(30,30,30,0.88);color:#fff;padding:5px 10px;border-radius:5px;font-size:11px;pointer-events:none;display:none;z-index:200;white-space:nowrap;line-height:1.6;box-shadow:0 2px 6px rgba(0,0,0,0.3);}
 
 .plabel{
-  background:rgba(255,255,255,0.92);
-  border:1.5px solid currentColor;
-  border-radius:50%;
-  width:22px;height:22px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:8px;font-weight:700;
+  font-weight:800;
   cursor:pointer;
-  box-shadow:0 1px 3px rgba(0,0,0,0.25);
   line-height:1;
   white-space:nowrap;
+  text-shadow:-1.5px -1.5px 0 #fff,1.5px -1.5px 0 #fff,-1.5px 1.5px 0 #fff,1.5px 1.5px 0 #fff,0 0 4px #fff,0 0 4px #fff;
+}
+.plabel.active{
+  font-weight:900;
+  text-shadow:-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff,2px 2px 0 #fff,0 0 5px #fff,0 0 5px #fff,0 0 5px #fff;
+  z-index:10;
 }
 .plabel.postal{
+  background:rgba(255,255,255,0.92);
+  border:1px solid currentColor;
   border-radius:6px;
-  width:auto;height:auto;
   padding:2px 5px;
+  font-size:8px;
+  font-weight:700;
+  text-shadow:none;
 }
 
 .sum-item{border-bottom:1px solid #f0f0f0;}
@@ -356,27 +360,35 @@ function createMkrs(){
   setTimeout(()=>document.querySelectorAll('.mk').forEach(el=>el.addEventListener('click',function(e){e.stopPropagation();selRoute(parseInt(this.dataset.r),false);})),500);
 }
 
+function labelFontSize(lv){
+  if(lv<=4)return 16;
+  if(lv<=6)return 13;
+  if(lv<=8)return 10;
+  if(lv<=10)return 8;
+  return 6;
+}
+
 function createLabels(){
   for(const[lat,lng,rn,col,postal] of CENTS){
     if(!selR.has(rn))continue;
-    const content=`<div class="plabel" data-r="${rn}" style="color:${col};border-color:${col};">${rn}</div>`;
+    const el=document.createElement('div');
+    el.className='plabel'; el.dataset.r=rn;
+    el.style.color=col;
+    el.textContent=rn;
+    el.addEventListener('click',function(e){
+      e.stopPropagation();
+      selRoute(parseInt(this.dataset.r),false);
+    });
     const ov=new kakao.maps.CustomOverlay({
       position:new kakao.maps.LatLng(lat,lng),
-      content,yAnchor:0.5,zIndex:2
+      content:el,yAnchor:0.5,zIndex:2
     });
     ov.setMap(showL&&selR.has(rn)?map:null);
     ov._route=rn;
     ov._postal=postal;
+    ov._el=el;
     labelOvs.push(ov);
   }
-  setTimeout(()=>{
-    document.querySelectorAll('.plabel').forEach(el=>{
-      el.addEventListener('click',function(e){
-        e.stopPropagation();
-        selRoute(parseInt(this.dataset.r),false);
-      });
-    });
-  },600);
 }
 
 function initPolys(){
@@ -509,6 +521,8 @@ function updateLabels(){
     '도봉구':'도봉구','중랑구':'중랑구','성북구':'성북구',
     '경기도 의정부시':'의정부시','경기도 양주시':'양주시','경기도 동두천시':'동두천시','경기도 포천시':'포천시',
     '의정부시':'의정부시','양주시':'양주시','동두천시':'동두천시','포천시':'포천시'};
+  const lv=map.getLevel();
+  const baseSize=labelFontSize(lv);
   for(const ov of labelOvs){
     if(!showL||!getDispR().has(ov._route)){ov.setMap(null);continue;}
     // 라우트의 모든 우편번호 중 활성 지역에 속하는 게 하나라도 있어야 표시
@@ -518,6 +532,11 @@ function updateLabels(){
     // 이 레이블 우편번호의 실제 구역이 활성화돼 있는지 체크
     const labelDist=SG2R[PS&&PS[ov._postal]];
     if(labelDist&&!activeDists.has(labelDist)){ov.setMap(null);continue;}
+    const isActive=ov._route===curR;
+    if(ov._el){
+      ov._el.classList.toggle('active',isActive);
+      ov._el.style.fontSize=(isActive?baseSize+4:baseSize)+'px';
+    }
     ov.setMap(map);
   }
   for(const ov of postOvs){
