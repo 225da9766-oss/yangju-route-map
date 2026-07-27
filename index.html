@@ -104,6 +104,7 @@ body{font-family:-apple-system,'Noto Sans KR',sans-serif;display:flex;height:100
   font-weight:700;
   text-shadow:none;
 }
+.centerPin{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));}
 
 .sum-item{border-bottom:1px solid #f0f0f0;}
 .sum-item:last-child{border-bottom:none;}
@@ -329,7 +330,7 @@ window.onload=function(){
   map=new kakao.maps.Map(document.getElementById('map'),{center:new kakao.maps.LatLng(37.68,127.05),level:9});
   map.addControl(new kakao.maps.ZoomControl(),kakao.maps.ControlPosition.RIGHT);
   map.addControl(new kakao.maps.MapTypeControl(),kakao.maps.ControlPosition.TOPRIGHT);
-  buildList(); initPolys(); createMkrs(); createLabels(); createPostLabels(); drawPolys();
+  buildList(); initPolys(); createMkrs(); createLabels(); createPostLabels(); drawPolys(); createCenterPin();
   kakao.maps.event.addListener(map,'idle',updateLabels);
   document.querySelectorAll('.rbtn').forEach(b=>b.addEventListener('click',function(){
     this.classList.toggle('on');this.classList.toggle('off');applyFilter();
@@ -366,6 +367,23 @@ function labelFontSize(lv){
   if(lv<=8)return 10;
   if(lv<=10)return 8;
   return 6;
+}
+
+function createCenterPin(){
+  const CENTER_LOC={lat:37.87,lng:127.015,name:'양주센터',addr:'경기 양주시 은현면 선암리 128-3 (양주 롯데 물류센터 1층)'};
+  const el=document.createElement('div');
+  el.className='centerPin';
+  el.innerHTML='<svg width="22" height="28" viewBox="0 0 34 44"><path d="M17 0C7.6 0 0 7.6 0 17c0 12 17 27 17 27s17-15 17-27C34 7.6 26.4 0 17 0z" fill="#4285f4"/><circle cx="17" cy="17" r="9" fill="#fff"/><path d="M13 15l4 4 4-4" stroke="#4285f4" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(CENTER_LOC.lat,CENTER_LOC.lng),content:el,yAnchor:1,zIndex:50});
+  ov.setMap(map);
+  el.addEventListener('mouseover',function(){
+    const tip=document.getElementById('tip');
+    tip.innerHTML='<b>\ud83d\ude9a '+CENTER_LOC.name+'</b><br><span style="opacity:0.8;font-size:10px;">'+CENTER_LOC.addr+'</span>';
+    tip.style.display='block';
+    tip.style.left=(mouseX+14)+'px';
+    tip.style.top=(mouseY-38)+'px';
+  });
+  el.addEventListener('mouseout',function(){document.getElementById('tip').style.display='none';});
 }
 
 function createLabels(){
